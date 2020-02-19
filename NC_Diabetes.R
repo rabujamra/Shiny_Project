@@ -20,6 +20,11 @@ df_Counties$County <- reorder.factor(df_Counties$County, new.order=st$NAME)
 df_Counties <- df_Counties %>%
   arrange(County)
 
+#rename
+df_Counties <- df_Counties %>%
+  rename(Metropolitan_Level=Metropolitan.or.Nonmetropolitan,
+         Primary.Care.Physicians=Health.Care.Workforce...Primary.Care.Physicians)
+
 # Assigning variables
 geo_choices = list(
         "Population" = names(df_Counties)[[37]],
@@ -42,17 +47,15 @@ xcol_choices = list(
   "Tier" = names(df_Counties)[[41]]
 )
 
-intro_str = "Hello....."
 
-intrdata_str = "Hello1...."
-
+intrdata_str = "The data is obtained from the NCIOM website (NCIOM.org).  It varies across years ranging from 2012-2019.  The data consists of various components, including demographics, access to care, healthy living and more.  The data is provided across all 100 counties in NC."
+intro_str = "Ramzi Abujamra, PhD"
 
 ui <- fluidPage(theme = "style.css",
                 shinyUI(
                         dashboardPage(
                                 skin = "blue",
-                                dashboardHeader(title = "NC County: Diabetes Prevalence", titleWidth = 350),
-                                #dashboardHeader(title = "NC Diabetes Prevalence"),
+                                dashboardHeader(title = "NC Counties Health: Diabetes Prevalence", titleWidth = 390),
                                 dashboardSidebar(sidebarMenu(
                                         menuItem("Introduction",tabName = "intr",icon = icon("align-justify")),
                                         menuItem("Geographic", tabName = "geo", icon = icon("map")),
@@ -74,13 +77,14 @@ ui <- fluidPage(theme = "style.css",
                                                       id = "intro",
                                                       tags$h1("About This Project"),
                                                       tags$h3(
-                                                        "Half the money I spend on advertising is wasted; the trouble is, I dont't know which half' -- John Wanamaker(1838-1922)"
+                                                        "This project exlpores health related statistics across counties in NC.  These results are obtained from NC Institute of Medicine (NCIOM).  The focus is on Diabetes and exploring associated factors across counties in NC."
                                                       ),
-                                                      tags$h4(intro_str),
                                                       tags$h2("The Dataset"),
                                                       tags$h4(intrdata_str),
+                                                      tags$h3("Author"),
+                                                      tags$h4(intro_str),
                                                       tags$img(
-                                                        #src = "HRhd2Y0.png",
+                                                        src = "http://nciom.org/wp-content/uploads/2017/07/About-Us_Sm.jpg",
                                                         width = 1100,
                                                         height = 660
                                                       )
@@ -120,7 +124,7 @@ ui <- fluidPage(theme = "style.css",
                                                          #),
                                                          # column(width=7,
                                                                          box(
-                                                                          title = "Data",
+                                                                          title = "Correlations Scatter Plot",
                                                                           solidHeader = T,
                                                                           collapsible = T,
                                                                           width = NULL,
@@ -198,7 +202,7 @@ ui <- fluidPage(theme = "style.css",
                                                            ),
                                                            fluidRow(column(10,
                                                              box(
-                                                             title = "Data",
+                                                             title = "Boxplot",
                                                              solidHeader = T,
                                                              collapsible = T,
                                                              width = NULL,
@@ -219,7 +223,7 @@ server <- function(input, output, session) {
                 
                 df_Counties %>%
                   select(input$xcol, names(df_Counties)[[12]]) %>%
-                  filter(df_Counties$Metropolitan.or.Nonmetropolitan %in% input$Metro &
+                  filter(df_Counties$Metropolitan %in% input$Metro &
                            df_Counties$Tier %in% input$Tier)
                 
         })
@@ -229,7 +233,7 @@ server <- function(input, output, session) {
                 req(input$xcol)
                 
           df_Counties %>%
-            filter(df_Counties$Metropolitan.or.Nonmetropolitan %in% input$Metro &
+            filter(df_Counties$Metropolitan %in% input$Metro &
                      df_Counties$Tier %in% input$Tier) %>%
                         select(input$xcol) 
         })
@@ -240,7 +244,7 @@ server <- function(input, output, session) {
           
           df_Counties %>%
             select(County, input$xcol, names(df_Counties)[[12]]) %>%
-            filter(df_Counties$Metropolitan.or.Nonmetropolitan %in% input$Metro &
+            filter(df_Counties$Metropolitan %in% input$Metro &
                      df_Counties$Tier %in% input$Tier)
           
         })
@@ -250,16 +254,27 @@ server <- function(input, output, session) {
           req(input$Cat)
           df_Counties %>%
             select(Cat=input$Cat,Diab=Diabetes.Prevalence) %>%
-            filter(df_Counties$Metropolitan.or.Nonmetropolitan %in% input$Metro1 &
+            filter(df_Counties$Metropolitan %in% input$Metro1 &
                      df_Counties$Tier %in% input$Tier1) #%>%
-            #filter('Metropolitan.or.Nonmetropolitan' %in% c('Metro', 'Nonmetro'))
+            #filter('Metropolitan' %in% c('Metro', 'Nonmetro'))
         })
         
         # Switching labels for map
         observe({ 
                 if (input$geoin == "Population") {
                         labtxt$x = "<strong>%s</strong><br/><strong>Population:</strong> %s"
-                        bins$y = 6
+                        bins$y = c(
+                          0,
+                          25000,
+                          50000,
+                          100000,
+                          125000,
+                          250000,
+                          350000,
+                          500000,
+                          1000000,
+                          Inf
+                        )
                 } else if (input$geoin == "Diabetes.Prevalence") {
                         labtxt$x = "<strong>%s</strong><br/><strong>Diabetes Prevalence:</strong> %s"
                         bins$y = 5
@@ -274,7 +289,7 @@ server <- function(input, output, session) {
                         bins$y = 5
                 } else if (input$geoin %in% c("Tier")) {
                         labtxt$x = "<strong>%s</strong><br/><strong>Tiers:</strong> %s"
-                        bins$y = 3
+                        bins$y = (3)
                 }
                 
         })
@@ -334,7 +349,7 @@ server <- function(input, output, session) {
         output$scatter = renderGvis({
                 gvisScatterChart(
                         geo_df_scat(),
-                        options = list(
+                        options = list(vAxis="{title:'Diabetes Prevalence'}",
                                 width = "700px",
                                 height = "600px",
                                 legend = "none"
@@ -345,7 +360,7 @@ server <- function(input, output, session) {
         # Printing correlation
         output$cor = renderText({
                 paste("Correlation:", round(cor(geo_corx(), df_Counties %>%
-                                                  filter(df_Counties$Metropolitan.or.Nonmetropolitan %in% input$Metro &
+                                                  filter(df_Counties$Metropolitan %in% input$Metro &
                                                            df_Counties$Tier %in% input$Tier) %>%
                                                   select(names(df_Counties)[[12]]))[[1]], 2), sep = " ")
         })
@@ -367,7 +382,8 @@ server <- function(input, output, session) {
             scale_x_discrete(labels = function(x) lapply(strwrap(x, width = 10, simplify = FALSE), paste, collapse="\n")) +
             theme(plot.title = element_text(size = 24, face = "bold"),
                   axis.text=element_text(size=12),
-                  axis.title=element_text(size=14,face="bold"))
+                  axis.title=element_text(size=14,face="bold")) +
+            scale_fill_discrete(name = "Category")
         )
         
         # Categories Table

@@ -3,10 +3,10 @@ library(ggplot2)
 library(readxl)
 library(tidyverse)
 
-#setwd('Desktop/NYCDataScience/3. Data Analysis R/Project/My_Project')
+#setwd('Desktop/NYCDataScience/3. Data Analysis R/Project/My_Project/Shiny_Project')
 getwd()
 
-County_Health_Data <- read_excel("County Health Data.xlsx")
+County_Health_Data <- read_excel("Data/County Health Data.xlsx")
 #View(County_Health_Data)
 
 df <- County_Health_Data
@@ -53,7 +53,7 @@ df_Counties <- wide %>%
   filter(County!='NC')
 
 #Factor Tier column 
-df_Counties$Tier1 = 
+df_Counties$Tier_Level = 
   factor(df_Counties$Tier, 
          levels = c('1.0','2.0','3.0'),
          labels = c("Tier 1","Tier 2","Tier 3"))
@@ -61,6 +61,7 @@ df_Counties$Tier1 =
 write.csv(df_Counties,'Data/Counties.csv')
 
 names(df_Counties)
+
 
 
 
